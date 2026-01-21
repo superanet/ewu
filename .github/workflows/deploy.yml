@@ -96,17 +96,15 @@ jobs:
 
             # 创建 .env 文件（使用传递的环境变量）
             echo "正在配置环境变量..."
-            cat > .env << EOF
-NODE_ENV=production
-DATABASE_URL=${DATABASE_URL}
-POSTGRES_URL=${POSTGRES_URL}
-NEXTAUTH_URL=${NEXTAUTH_URL}
-NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-AUTH_SECRET=${AUTH_SECRET}
-BASE_URL=${BASE_URL}
-STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-EOF
+            echo "NODE_ENV=production" > .env
+            echo "DATABASE_URL=${DATABASE_URL}" >> .env
+            echo "POSTGRES_URL=${POSTGRES_URL}" >> .env
+            echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
+            echo "AUTH_SECRET=${AUTH_SECRET}" >> .env
+            echo "BASE_URL=${BASE_URL}" >> .env
+            echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" >> .env
+            echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env
 
             # 停止现有容器
             echo "正在停止现有容器..."
