@@ -87,21 +87,27 @@ jobs:
             # 修复 Git 仓库所有权问题
             git config --global --add safe.directory /opt/ewu
 
+            # 配置 Git 超时和重试设置
+            git config --global http.lowSpeedLimit 1000
+            git config --global http.lowSpeedTime 60
+            git config --global http.postBuffer 524288000
+
             # 进入项目目录
             cd /opt/ewu
 
-            # 拉取最新代码（带重试机制）
+            # 拉取最新代码（增强重试机制：5次重试，30秒延迟）
             echo "正在拉取最新代码..."
-            for i in 1 2 3; do
-              if git pull origin master; then
-                echo "代码拉取成功"
+            for i in 1 2 3 4 5; do
+              echo "尝试 $i/5..."
+              if timeout 180 git pull origin master; then
+                echo "✓ 代码拉取成功"
                 break
               else
-                if [ $i -lt 3 ]; then
-                  echo "拉取失败，10秒后重试 ($i/3)..."
-                  sleep 10
+                if [ $i -lt 5 ]; then
+                  echo "✗ 拉取失败，30秒后重试 ($i/5)..."
+                  sleep 30
                 else
-                  echo "拉取失败，已重试3次"
+                  echo "✗ 拉取失败，已重试5次，放弃"
                   exit 1
                 fi
               fi
