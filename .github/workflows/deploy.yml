@@ -80,6 +80,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
+          envs: DATABASE_URL,POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET
           script: |
             set -e  # 任何命令失败时立即退出
 
@@ -93,19 +94,19 @@ jobs:
             echo "正在拉取最新代码..."
             git pull origin master
 
-            # 创建 .env 文件
+            # 创建 .env 文件（使用传递的环境变量）
             echo "正在配置环境变量..."
-            cat > .env << 'EOF'
-            NODE_ENV=production
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            POSTGRES_URL=${{ secrets.DATABASE_URL }}
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            AUTH_SECRET=${{ secrets.AUTH_SECRET }}
-            BASE_URL=${{ secrets.NEXTAUTH_URL }}
-            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-            EOF
+            cat > .env << EOF
+NODE_ENV=production
+DATABASE_URL=${DATABASE_URL}
+POSTGRES_URL=${POSTGRES_URL}
+NEXTAUTH_URL=${NEXTAUTH_URL}
+NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+AUTH_SECRET=${AUTH_SECRET}
+BASE_URL=${BASE_URL}
+STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+EOF
 
             # 停止现有容器
             echo "正在停止现有容器..."
@@ -125,3 +126,12 @@ jobs:
             # 检查容器状态
             echo "容器状态:"
             docker-compose ps
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          BASE_URL: ${{ secrets.NEXTAUTH_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
