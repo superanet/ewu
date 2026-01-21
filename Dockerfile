@@ -1,5 +1,5 @@
 # 多阶段构建 - 依赖安装阶段
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # 构建阶段
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # 安装 pnpm
@@ -27,7 +27,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN pnpm build
 
 # 生产运行阶段
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
