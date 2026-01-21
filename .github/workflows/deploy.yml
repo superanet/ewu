@@ -30,14 +30,15 @@ jobs:
       - name: 调试环境变量
         run: |
           echo "=== 环境变量调试信息 ==="
-          echo "DATABASE_URL 长度: ${#DATABASE_URL}"
           echo "NEXTAUTH_URL 长度: ${#NEXTAUTH_URL}"
+          echo "NEXTAUTH_URL 内容: $NEXTAUTH_URL"
+          echo "NEXTAUTH_URL 十六进制:"
+          echo "$NEXTAUTH_URL" | xxd | head -5
+          echo ""
           echo "BASE_URL 长度: ${#BASE_URL}"
-          echo "DATABASE_URL (前50字符): ${DATABASE_URL:0:50}"
-          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
-          echo "BASE_URL: $BASE_URL"
-          echo "检查换行符:"
-          echo "$NEXTAUTH_URL" | od -c | head -5
+          echo "BASE_URL 内容: $BASE_URL"
+          echo "BASE_URL 十六进制:"
+          echo "$BASE_URL" | xxd | head -5
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
@@ -54,19 +55,21 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
-          # 清理环境变量中的换行符和空格
-          export NEXTAUTH_URL=$(echo "$NEXTAUTH_URL" | tr -d '\n\r' | xargs)
-          export BASE_URL=$(echo "$BASE_URL" | tr -d '\n\r' | xargs)
-          export DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\n\r' | xargs)
-          export POSTGRES_URL=$(echo "$POSTGRES_URL" | tr -d '\n\r' | xargs)
-          export NEXTAUTH_SECRET=$(echo "$NEXTAUTH_SECRET" | tr -d '\n\r' | xargs)
-          export AUTH_SECRET=$(echo "$AUTH_SECRET" | tr -d '\n\r' | xargs)
-          export STRIPE_SECRET_KEY=$(echo "$STRIPE_SECRET_KEY" | tr -d '\n\r' | xargs)
-          export STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_WEBHOOK_SECRET" | tr -d '\n\r' | xargs)
+          # 清理环境变量中的换行符、空格，并只保留第一个单词（防止多个值）
+          export NEXTAUTH_URL=$(echo "$NEXTAUTH_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export BASE_URL=$(echo "$BASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export POSTGRES_URL=$(echo "$POSTGRES_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export NEXTAUTH_SECRET=$(echo "$NEXTAUTH_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export AUTH_SECRET=$(echo "$AUTH_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export STRIPE_SECRET_KEY=$(echo "$STRIPE_SECRET_KEY" | tr -d '\n\r' | xargs | awk '{print $1}')
+          export STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_WEBHOOK_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
 
           echo "清理后的环境变量:"
           echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+          echo "NEXTAUTH_URL 长度: ${#NEXTAUTH_URL}"
           echo "BASE_URL: $BASE_URL"
+          echo "BASE_URL 长度: ${#BASE_URL}"
 
           pnpm build
 
