@@ -27,6 +27,22 @@ jobs:
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
 
+      - name: 调试环境变量
+        run: |
+          echo "=== 环境变量调试信息 ==="
+          echo "DATABASE_URL 长度: ${#DATABASE_URL}"
+          echo "NEXTAUTH_URL 长度: ${#NEXTAUTH_URL}"
+          echo "BASE_URL 长度: ${#BASE_URL}"
+          echo "DATABASE_URL (前50字符): ${DATABASE_URL:0:50}"
+          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+          echo "BASE_URL: $BASE_URL"
+          echo "检查换行符:"
+          echo "$NEXTAUTH_URL" | od -c | head -5
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          BASE_URL: ${{ secrets.NEXTAUTH_URL }}
+
       - name: 运行类型检查
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
