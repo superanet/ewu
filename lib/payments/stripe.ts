@@ -7,7 +7,8 @@ import {
   updateTeamSubscription
 } from '@/lib/db/queries';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Stripe 配置为可选，如果没有密钥则使用占位符（功能将不可用）
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2025-04-30.basil'
 });
 
