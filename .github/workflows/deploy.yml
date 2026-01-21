@@ -51,7 +51,20 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           BASE_URL: ${{ secrets.NEXTAUTH_URL }}
-        run: pnpm build
+        run: |
+          # 清理环境变量中的换行符和空格
+          export NEXTAUTH_URL=$(echo "$NEXTAUTH_URL" | tr -d '\n\r' | xargs)
+          export BASE_URL=$(echo "$BASE_URL" | tr -d '\n\r' | xargs)
+          export DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\n\r' | xargs)
+          export POSTGRES_URL=$(echo "$POSTGRES_URL" | tr -d '\n\r' | xargs)
+          export NEXTAUTH_SECRET=$(echo "$NEXTAUTH_SECRET" | tr -d '\n\r' | xargs)
+          export AUTH_SECRET=$(echo "$AUTH_SECRET" | tr -d '\n\r' | xargs)
+
+          echo "清理后的环境变量:"
+          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+          echo "BASE_URL: $BASE_URL"
+
+          pnpm build
 
       - name: 部署到服务器
         uses: appleboy/ssh-action@v1.0.0
