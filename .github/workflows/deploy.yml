@@ -48,7 +48,6 @@ jobs:
           build-args: |
             POSTGRES_URL=${{ secrets.POSTGRES_URL }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             BASE_URL=${{ secrets.NEXTAUTH_URL }}
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
@@ -68,7 +67,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          envs: POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,DOCKERHUB_USERNAME
+          envs: POSTGRES_URL,NEXTAUTH_URL,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,DOCKERHUB_USERNAME
           script: |
             set -e
 
@@ -84,7 +83,6 @@ jobs:
             NODE_ENV=production
             POSTGRES_URL=${POSTGRES_URL}
             NEXTAUTH_URL=${NEXTAUTH_URL}
-            NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
             AUTH_SECRET=${AUTH_SECRET}
             BASE_URL=${BASE_URL}
             STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
@@ -134,7 +132,6 @@ jobs:
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           BASE_URL: ${{ secrets.NEXTAUTH_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
