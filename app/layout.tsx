@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Manrope } from 'next/font/google';
+import localFont from 'next/font/local';
 import { getUser, getTeamForUser } from '@/lib/db/queries';
 import { SWRConfig } from 'swr';
 
@@ -13,7 +13,11 @@ export const viewport: Viewport = {
   maximumScale: 1
 };
 
-const manrope = Manrope({ subsets: ['latin'] });
+const manrope = localFont({
+  src: './fonts/Manrope.woff2',
+  variable: '--font-manrope',
+  display: 'swap',
+});
 
 export default function RootLayout({
   children
