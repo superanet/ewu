@@ -2,18 +2,18 @@
 
 ## 概述
 
-本文档说明如何将易物地质勘察平台部署到阿里云服务器。
+本文档说明如何将易物地质勘察平台部署到京东云服务器。
 
 ## 前置要求
 
-- 阿里云服务器（Ubuntu/Debian）
+- 京东云服务器（Ubuntu/Debian）
 - Docker 和 Docker Compose 已安装
 - 域名已配置（ewutech.top）
 - GitHub 仓库访问权限
 
 ## 一、服务器初始化
 
-### 1.1 安装必要软件
+### 1.1 安装必要软件（跳过）
 
 ```bash
 # 更新系统
@@ -91,15 +91,15 @@ openssl rand -base64 32
 
 ### 2.2 添加以下 Secrets
 
-| Secret 名称 | 说明 | 示例值 |
-|------------|------|--------|
-| `SERVER_HOST` | 服务器 IP 地址 | `117.72.40.122` |
-| `SERVER_USER` | SSH 用户名 | `root` |
-| `SERVER_PORT` | SSH 端口 | `22` |
-| `SSH_PRIVATE_KEY` | SSH 私钥 | 见下方说明 |
-| `DATABASE_URL` | 数据库连接字符串 | `postgresql://...` |
-| `NEXTAUTH_URL` | 应用 URL | `https://ewutech.top` |
-| `NEXTAUTH_SECRET` | NextAuth 密钥 | 使用 openssl 生成 |
+| Secret 名称         | 说明             | 示例值                  |
+| ------------------- | ---------------- | ----------------------- |
+| `SERVER_HOST`     | 服务器 IP 地址   | `117.72.40.122`       |
+| `SERVER_USER`     | SSH 用户名       | `root`                |
+| `SERVER_PORT`     | SSH 端口         | `22`                  |
+| `SSH_PRIVATE_KEY` | SSH 私钥         | 见下方说明              |
+| `DATABASE_URL`    | 数据库连接字符串 | `postgresql://...`    |
+| `NEXTAUTH_URL`    | 应用 URL         | `https://ewutech.top` |
+| `NEXTAUTH_SECRET` | NextAuth 密钥    | 使用 openssl 生成       |
 
 ### 2.3 生成 SSH 密钥对
 
