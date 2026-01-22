@@ -1,4 +1,4 @@
-name: Deploy to Alibaba Cloud
+name: Build and Deploy
 
 on:
   push:
@@ -6,73 +6,62 @@ on:
       - master
   workflow_dispatch:
 
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/ewu
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 Node.js
-        uses: actions/setup-node@v4
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3
         with:
-          node-version: '20'
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v2
+      - name: 提取镜像元数据
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          version: 10
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
 
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
+      - name: 构建并推送镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            POSTGRES_URL=${{ secrets.DATABASE_URL }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+            BASE_URL=${{ secrets.NEXTAUTH_URL }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: 调试环境变量
-        run: |
-          echo "=== 环境变量调试信息 ==="
-          echo "NEXTAUTH_URL 长度: ${#NEXTAUTH_URL}"
-          echo "NEXTAUTH_URL 内容: $NEXTAUTH_URL"
-          echo "NEXTAUTH_URL 十六进制:"
-          echo "$NEXTAUTH_URL" | xxd | head -5
-          echo ""
-          echo "BASE_URL 长度: ${#BASE_URL}"
-          echo "BASE_URL 内容: $BASE_URL"
-          echo "BASE_URL 十六进制:"
-          echo "$BASE_URL" | xxd | head -5
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          BASE_URL: ${{ secrets.NEXTAUTH_URL }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
 
-      - name: 运行类型检查
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          POSTGRES_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          BASE_URL: ${{ secrets.NEXTAUTH_URL }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-        run: |
-          # 清理环境变量中的换行符、空格，并只保留第一个单词（防止多个值）
-          export NEXTAUTH_URL=$(echo "$NEXTAUTH_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export BASE_URL=$(echo "$BASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export POSTGRES_URL=$(echo "$POSTGRES_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export NEXTAUTH_SECRET=$(echo "$NEXTAUTH_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export AUTH_SECRET=$(echo "$AUTH_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export STRIPE_SECRET_KEY=$(echo "$STRIPE_SECRET_KEY" | tr -d '\n\r' | xargs | awk '{print $1}')
-          export STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_WEBHOOK_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
-
-          echo "清理后的环境变量:"
-          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
-          echo "NEXTAUTH_URL 长度: ${#NEXTAUTH_URL}"
-          echo "BASE_URL: $BASE_URL"
-          echo "BASE_URL 长度: ${#BASE_URL}"
-
-          pnpm build
-
+    steps:
       - name: 部署到服务器
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -80,41 +69,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          envs: DATABASE_URL,POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET
+          envs: DATABASE_URL,POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,DOCKERHUB_USERNAME
           script: |
-            set -e  # 任何命令失败时立即退出
+            set -e
 
-            # 修复 Git 仓库所有权问题
-            git config --global --add safe.directory /opt/ewu
+            echo "=== 开始部署 ==="
 
-            # 配置 Git 超时和重试设置
-            git config --global http.lowSpeedLimit 1000
-            git config --global http.lowSpeedTime 60
-            git config --global http.postBuffer 524288000
-
-            # 进入项目目录
-            cd /opt/ewu
-
-            # 拉取最新代码（增强重试机制：5次重试，30秒延迟）
-            echo "正在拉取最新代码..."
-            for i in 1 2 3 4 5; do
-              echo "尝试 $i/5..."
-              if timeout 180 git pull origin master; then
-                echo "✓ 代码拉取成功"
-                break
-              else
-                if [ $i -lt 5 ]; then
-                  echo "✗ 拉取失败，30秒后重试 ($i/5)..."
-                  sleep 30
-                else
-                  echo "✗ 拉取失败，已重试5次，放弃"
-                  exit 1
-                fi
-              fi
-            done
-
-            # 清理环境变量（移除换行符、空格等）
-            echo "正在清理环境变量..."
+            # 清理环境变量
             export DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
             export POSTGRES_URL=$(echo "$POSTGRES_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
             export NEXTAUTH_URL=$(echo "$NEXTAUTH_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
@@ -124,36 +85,64 @@ jobs:
             export STRIPE_SECRET_KEY=$(echo "$STRIPE_SECRET_KEY" | tr -d '\n\r' | xargs | awk '{print $1}')
             export STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_WEBHOOK_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
 
-            # 创建 .env 文件（使用清理后的环境变量）
+            # 创建部署目录
+            mkdir -p /opt/ewu
+            cd /opt/ewu
+
+            # 创建 .env 文件
             echo "正在配置环境变量..."
-            echo "NODE_ENV=production" > .env
-            echo "DATABASE_URL=${DATABASE_URL}" >> .env
-            echo "POSTGRES_URL=${POSTGRES_URL}" >> .env
-            echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
-            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
-            echo "AUTH_SECRET=${AUTH_SECRET}" >> .env
-            echo "BASE_URL=${BASE_URL}" >> .env
-            echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" >> .env
-            echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env
+            cat > .env << EOF
+            NODE_ENV=production
+            DATABASE_URL=${DATABASE_URL}
+            POSTGRES_URL=${POSTGRES_URL}
+            NEXTAUTH_URL=${NEXTAUTH_URL}
+            NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+            AUTH_SECRET=${AUTH_SECRET}
+            BASE_URL=${BASE_URL}
+            STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+            STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+            EOF
 
-            # 停止现有容器
-            echo "正在停止现有容器..."
-            docker-compose down
+            # 创建 docker-compose.yml
+            echo "正在创建 docker-compose.yml..."
+            cat > docker-compose.yml << 'COMPOSE'
+            version: '3.8'
+            services:
+              app:
+                image: ${DOCKERHUB_USERNAME}/ewu:latest
+                container_name: ewu-app
+                restart: unless-stopped
+                ports:
+                  - "3000:3000"
+                env_file:
+                  - .env
+                environment:
+                  - NODE_ENV=production
+            COMPOSE
 
-            # 重新构建并启动容器
-            echo "正在构建并启动容器..."
-            docker-compose up -d --build
+            # 拉取最新镜像
+            echo "正在拉取最新镜像..."
+            docker pull ${DOCKERHUB_USERNAME}/ewu:latest
+
+            # 停止并删除旧容器
+            echo "正在停止旧容器..."
+            docker-compose down || true
+
+            # 启动新容器
+            echo "正在启动新容器..."
+            docker-compose up -d
 
             # 等待容器启动
             sleep 5
 
-            # 显示容器日志
-            echo "容器日志:"
-            docker-compose logs --tail=50
-
             # 检查容器状态
-            echo "容器状态:"
+            echo "=== 容器状态 ==="
             docker-compose ps
+
+            echo "=== 容器日志 ==="
+            docker-compose logs --tail=30
+
+            echo "=== 部署完成 ==="
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POSTGRES_URL: ${{ secrets.DATABASE_URL }}
@@ -163,3 +152,4 @@ jobs:
           BASE_URL: ${{ secrets.NEXTAUTH_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
