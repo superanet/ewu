@@ -46,8 +46,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            POSTGRES_URL=${{ secrets.DATABASE_URL }}
+            POSTGRES_URL=${{ secrets.POSTGRES_URL }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
@@ -69,7 +68,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          envs: DATABASE_URL,POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,DOCKERHUB_USERNAME
+          envs: POSTGRES_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,AUTH_SECRET,BASE_URL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,DOCKERHUB_USERNAME
           script: |
             set -e
 
@@ -92,7 +91,6 @@ jobs:
             echo "正在配置环境变量..."
             cat > .env << EOF
             NODE_ENV=production
-            DATABASE_URL=${DATABASE_URL}
             POSTGRES_URL=${POSTGRES_URL}
             NEXTAUTH_URL=${NEXTAUTH_URL}
             NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -143,8 +141,7 @@ jobs:
 
             echo "=== 部署完成 ==="
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          POSTGRES_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
