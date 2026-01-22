@@ -75,7 +75,6 @@ jobs:
             echo "=== 开始部署 ==="
 
             # 清理环境变量
-            export BASE_URL=$(echo "$BASE_URL" | tr -d '\n\r' | xargs | awk '{print $1}')
             export STRIPE_SECRET_KEY=$(echo "$STRIPE_SECRET_KEY" | tr -d '\n\r' | xargs | awk '{print $1}')
             export STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_WEBHOOK_SECRET" | tr -d '\n\r' | xargs | awk '{print $1}')
 
